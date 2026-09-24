@@ -1,0 +1,87 @@
+services:
+  mariadb:
+    image: mariadb:10.11
+    container_name: plpe_mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: plpe_db
+      MYSQL_USER: plpe_user
+      MYSQL_PASSWORD: plpe_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - development
+
+  mongodb:
+    image: mongo:7.0
+    container_name: plpe_mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: adminpassword
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - development
+
+  mongo-express:
+    image: mongo-express:1.0.2
+    container_name: plpe_mongo_express
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: adminpassword
+      ME_CONFIG_MONGODB_URL: mongodb://admin:adminpassword@mongodb:27017/?authSource=admin
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: admin123
+      ME_CONFIG_MONGODB_ENABLE_ADMIN: "true"
+    ports:
+      - "8081:8081"
+    networks:
+      - development
+
+  web:
+    build:
+      context: .
+      dockerfile: dockerfile
+    container_name: plpe_web
+    restart: unless-stopped
+    depends_on:
+      - mariadb
+      - mongodb
+    environment:
+      - MARIADB_URL=mysql+aiomysql://plpe_user:plpe_password@mariadb:3306/plpe_db
+      - MONGODB_URL=mongodb://admin:adminpassword@mongodb:27017/?authSource=admin
+      - SECRET_KEY=tu_secret_key_super_segura_aqui
+      - ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=60
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app:/app/app
+      - ./alembic:/app/alembic
+      - ./alembic.ini:/app/alembic.ini
+    networks:
+      - development
+
+  adminer:
+    image: adminer:4.8.1
+    container_name: plpe_adminer
+    restart: unless-stopped
+    ports:
+      - "8567:8080"
+    networks:
+      - development
+
+volumes:
+  mariadb_data:
+  mongo_data:
+
+networks:
+  development:
+    driver: bridge
