@@ -3,8 +3,8 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Copia e instala dependencias
-COPY requeriments.txt .
-RUN pip install --no-cache-dir -r requeriments.txt
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copia el código fuente
 COPY . .
