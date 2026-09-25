@@ -9,8 +9,11 @@ from alembic import context
 
 # --- Cargar config y modelos ---
 from app.core.config import settings
-from app.database.mariadb import Base
-from app.models import mariadb  # noqa: F401  ← Importa TODOS los modelos
+from app.core.database.mariadb import Base
+
+# Importar TODOS los modelos para que Alembic los detecte
+from app.modules.auth.models import user, role, permission, user_role, role_permission, totp, password_reset, session  # noqa: F401
+from app.modules.business.models import business, category, business_category, product, service, favorite, inquiry  # noqa: F401
 
 config = context.config
 

@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PLPE - Plataforma Local de Productores y Emprendimientos</title>
+  <link rel="stylesheet" href="/static/css/styles.css" />
+</head>
+<body>
+  <!-- Símbolos SVG reutilizables -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <defs>
+      <linearGradient id="plpeGrad" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#4caf50"/>
+        <stop offset="1" stop-color="#1b5e20"/>
+      </linearGradient>
+      <symbol id="plpe-mark" viewBox="0 0 48 48">
+        <rect width="48" height="48" rx="13" fill="url(#plpeGrad)"/>
+        <path d="M24 37V21" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/>
+        <path d="M24 24c0-5.4 4.3-9.7 9.7-9.7 0 5.4-4.3 9.7-9.7 9.7Z" fill="#ffffff"/>
+        <path d="M24 30.5c0-4.6-3.7-8.3-8.3-8.3 0 4.6 3.7 8.3 8.3 8.3Z" fill="#ffffff" fill-opacity="0.82"/>
+        <circle cx="33.5" cy="34.5" r="2" fill="#c8e6c9"/>
+        <circle cx="14.5" cy="34.5" r="2" fill="#c8e6c9"/>
+      </symbol>
+      <symbol id="plpe-mascot" viewBox="0 0 64 74">
+        <path d="M32 20c0-7.5 5.5-13 13-13 0 7.5-5.5 13-13 13Z" fill="#66bb6a"/>
+        <path d="M32 20c0-5.5-4.5-10-10-10 0 5.5 4.5 10 10 10Z" fill="#81c784"/>
+        <path d="M32 34V18" stroke="#43a047" stroke-width="3.2" stroke-linecap="round"/>
+        <circle cx="32" cy="48" r="22" fill="#4caf50"/>
+        <circle cx="32" cy="48" r="22" fill="none" stroke="#388e3c" stroke-width="1.5" opacity="0.5"/>
+        <circle cx="24.5" cy="45" r="3" fill="#1b3a1e"/>
+        <circle cx="39.5" cy="45" r="3" fill="#1b3a1e"/>
+        <circle cx="25.6" cy="43.8" r="1" fill="#ffffff"/>
+        <circle cx="40.6" cy="43.8" r="1" fill="#ffffff"/>
+        <path d="M25 53c2.5 3.2 11.5 3.2 14 0" stroke="#1b3a1e" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+        <circle cx="20" cy="51.5" r="2.6" fill="#a5d6a7" opacity="0.85"/>
+        <circle cx="44" cy="51.5" r="2.6" fill="#a5d6a7" opacity="0.85"/>
+      </symbol>
+    </defs>
+  </svg>
+
+  <!-- Sitio público (acceso anónimo) -->
+  <div id="public-screen" class="public-screen">
+    <div id="public-home">
+      <section class="hero">
+        <div class="hero-topbar">
+          <a class="public-brand" href="/" aria-label="PLPE - Inicio">
+            <svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true"><use href="#plpe-mark"/></svg>
+            <span class="brand-text">
+              <span class="brand-name">PLPE</span>
+              <span class="brand-tagline">Productores y Emprendimientos</span>
+            </span>
+          </a>
+          <button id="public-login-btn" class="btn btn-primary btn-access">
+            <svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-4.42 0-8 2.24-8 5v2h16v-2c0-2.76-3.58-5-8-5Z" fill="currentColor"/></svg>
+            <span id="public-login-label">Acceso</span>
+          </button>
+        </div>
+        <div class="hero-inner">
+          <h1>Descubrí productores y emprendimientos locales</h1>
+          <p>Explorá sus productos y servicios, y contactalos directamente. No necesitás crear una cuenta para navegar.</p>
+          <form class="public-search" id="public-search-form">
+            <input type="search" id="public-search-input" placeholder="Buscar emprendimientos, productos o servicios..." />
+            <select id="public-category-filter" class="input">
+              <option value="">Todas las categorías</option>
+            </select>
+            <button type="submit" class="btn btn-primary btn-search">Buscar</button>
+          </form>
+        </div>
+      </section>
+
+      <main class="public-content">
+        <div class="public-tabs">
+          <button class="public-tab active" data-tab="businesses">Emprendimientos</button>
+          <button class="public-tab" data-tab="products">Productos</button>
+          <button class="public-tab" data-tab="services">Servicios</button>
+        </div>
+        <div id="public-grid" class="public-grid"></div>
+      </main>
+    </div>
+
+    <!-- Detalle del emprendimiento (pantalla completa) -->
+    <div id="public-detail" class="public-detail" style="display:none">
+      <div class="detail-topbar">
+        <button class="btn btn-ghost-light" id="detail-back-btn">← Volver</button>
+        <button id="detail-login-btn" class="btn btn-access">
+          <svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-4.42 0-8 2.24-8 5v2h16v-2c0-2.76-3.58-5-8-5Z" fill="currentColor"/></svg>
+          <span id="detail-login-label">Acceso</span>
+        </button>
+      </div>
+      <div class="detail-head">
+        <div class="detail-head-inner">
+          <div id="detail-img" class="detail-img">🏪</div>
+          <div>
+            <h1 id="detail-name"></h1>
+            <div id="detail-meta" class="detail-meta"></div>
+            <p id="detail-desc" class="detail-desc"></p>
+          </div>
+        </div>
+      </div>
+      <div class="public-content">
+        <div class="detail-grid">
+          <div class="detail-main">
+            <div class="card">
+              <div class="card-header"><h3>Productos</h3></div>
+              <div id="detail-products" class="detail-list-pad"></div>
+            </div>
+            <div class="card">
+              <div class="card-header"><h3>Servicios</h3></div>
+              <div id="detail-services" class="detail-list-pad"></div>
+            </div>
+            <div class="card detail-map-card" id="detail-map-card">
+              <div class="card-header"><h3>Ubicación en el mapa</h3></div>
+              <div id="detail-map" class="detail-map-block"></div>
+            </div>
+          </div>
+          <aside class="detail-side">
+            <div class="card">
+              <div class="card-header"><h3>Solicitar ser contactado</h3></div>
+              <div class="detail-list-pad">
+                <p class="mini-sub" style="margin-bottom:10px">Completá el formulario y la administración de PLPE te va a contactar.</p>
+                <form id="detail-contact-form">
+                  <div class="form-group"><label>Nombre *</label><input name="name" required /></div>
+                  <div class="form-group"><label>Email *</label><input type="email" name="email" required /></div>
+                  <div class="form-group"><label>Teléfono</label><input name="phone" /></div>
+                  <div class="form-group"><label>Mensaje</label><textarea name="message" placeholder="Contanos qué necesitás..."></textarea></div>
+                  <button type="submit" class="btn btn-primary btn-block">Enviar solicitud</button>
+                </form>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header"><h3>Ubicación y datos</h3></div>
+              <div id="detail-location" class="detail-list-pad"></div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+
+    <footer class="public-footer">
+      <span>PLPE © 2026 - Plataforma Local de Productores y Emprendimientos</span>
+    </footer>
+  </div>
+
+  <!-- Pantalla de autenticación -->
+  <div id="auth-screen" class="auth-screen" style="display:none">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <svg class="brand-mark auth-mark" viewBox="0 0 48 48" aria-hidden="true"><use href="#plpe-mark"/></svg>
+        <h1>Productores y Emprendimientos</h1>
+        <p>Plataforma para visibilizar y conectar emprendedores locales</p>
+      </div>
+
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="login">Iniciar sesión</button>
+        <button class="auth-tab" data-tab="register">Registrarse</button>
+      </div>
+
+      <form id="login-form" class="auth-form">
+        <div class="form-group">
+          <label for="login-email">Email</label>
+          <input type="email" id="login-email" required placeholder="tu@email.com" />
+        </div>
+        <div class="form-group">
+          <label for="login-password">Contraseña</label>
+          <input type="password" id="login-password" required placeholder="••••••••" />
+        </div>
+        <div class="form-group" id="login-totp-group" style="display:none">
+          <label for="login-totp">Código 2FA</label>
+          <input type="text" id="login-totp" placeholder="123456" />
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Ingresar</button>
+      </form>
+
+      <form id="register-form" class="auth-form" style="display:none">
+        <div class="form-group">
+          <label for="reg-email">Email</label>
+          <input type="email" id="reg-email" required placeholder="tu@email.com" />
+        </div>
+        <div class="form-group">
+          <label for="reg-password">Contraseña</label>
+          <input type="password" id="reg-password" required minlength="8" placeholder="Mínimo 8 caracteres" />
+        </div>
+        <div class="form-group">
+          <label for="reg-name">Nombre completo</label>
+          <input type="text" id="reg-name" placeholder="Juan Pérez" />
+        </div>
+        <div class="form-group">
+          <label for="reg-phone">Teléfono</label>
+          <input type="text" id="reg-phone" placeholder="+54 9 11 1234-5678" />
+        </div>
+        <div class="form-group">
+          <label for="reg-city">Ciudad</label>
+          <input type="text" id="reg-city" placeholder="Buenos Aires" />
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Crear cuenta</button>
+      </form>
+
+      <button id="auth-back-btn" class="btn btn-ghost btn-block" style="margin-top:14px">← Volver al inicio</button>
+    </div>
+    <p class="auth-footer">PLPE © 2026 - Plataforma Local</p>
+  </div>
+
+  <!-- Aplicación principal -->
+  <div id="app-screen" class="app-screen" style="display:none">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true"><use href="#plpe-mark"/></svg>
+        <span class="brand-text sidebar-brand-text">
+          <span class="brand-name">PLPE</span>
+          <span class="brand-tagline">Administración</span>
+        </span>
+      </div>
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-view="dashboard"><span class="nav-icon">▤</span> Panel</button>
+        <button class="nav-item" data-view="categories"><span class="nav-icon">☰</span> Categorías</button>
+        <button class="nav-item" data-view="businesses"><span class="nav-icon">⌂</span> Emprendimientos</button>
+        <button class="nav-item" data-view="products"><span class="nav-icon">▦</span> Productos</button>
+        <button class="nav-item" data-view="services"><span class="nav-icon">✦</span> Servicios</button>
+        <button class="nav-item" data-view="inquiries"><span class="nav-icon">✉</span> Consultas</button>
+        <button class="nav-item" data-view="requests"><span class="nav-icon">✆</span> Solicitudes</button>
+        <button class="nav-item" data-view="favorites"><span class="nav-icon">♥</span> Favoritos</button>
+        <button class="nav-item" data-view="profile"><span class="nav-icon">☺</span> Mi Perfil</button>
+      </nav>
+      <div class="sidebar-footer">
+        <div id="user-info" class="user-info"></div>
+        <button id="view-public-btn" class="btn btn-ghost btn-block" style="margin-bottom:8px">Ver sitio público</button>
+        <button id="logout-btn" class="btn btn-ghost btn-block">Cerrar sesión</button>
+      </div>
+    </aside>
+
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button id="menu-toggle" class="menu-toggle" aria-label="Abrir menú">☰</button>
+          <h2 id="view-title">Panel</h2>
+        </div>
+        <div class="topbar-actions">
+          <span id="api-status" class="api-status">Conectado</span>
+        </div>
+      </header>
+
+      <div class="content">
+        <!-- Dashboard -->
+        <section id="view-dashboard" class="view active">
+          <div class="stats-grid" id="stats-grid"></div>
+          <div class="card">
+            <div class="card-header">
+              <h3>Últimos emprendimientos</h3>
+            </div>
+            <div id="dashboard-businesses" class="mini-list"></div>
+          </div>
+        </section>
+
+        <!-- Categorías -->
+        <section id="view-categories" class="view">
+          <div class="toolbar">
+            <button class="btn btn-primary" id="btn-new-category">+ Nueva categoría</button>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table" id="categories-table">
+              <thead>
+                <tr><th>ID</th><th>Nombre</th><th>Descripción</th><th>Activa</th><th>Acciones</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Emprendimientos -->
+        <section id="view-businesses" class="view">
+          <div class="toolbar">
+            <input type="search" id="business-search" class="input" placeholder="Buscar emprendimiento..." />
+            <select id="business-status-filter" class="input">
+              <option value="">Todos los estados</option>
+              <option value="pending">Pendiente</option>
+              <option value="approved">Aprobado</option>
+              <option value="suspended">Suspendido</option>
+            </select>
+            <button class="btn btn-primary" id="btn-new-business">+ Nuevo emprendimiento</button>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table" id="businesses-table">
+              <thead>
+                <tr><th>ID</th><th>Nombre</th><th>Ciudad</th><th>Categorías</th><th>Estado</th><th>Acciones</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Productos -->
+        <section id="view-products" class="view">
+          <div class="toolbar">
+            <input type="search" id="product-search" class="input" placeholder="Buscar producto..." />
+            <button class="btn btn-primary" id="btn-new-product">+ Nuevo producto</button>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table" id="products-table">
+              <thead>
+                <tr><th>ID</th><th>Nombre</th><th>Negocio</th><th>Precio</th><th>Stock</th><th>Activo</th><th>Acciones</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Servicios -->
+        <section id="view-services" class="view">
+          <div class="toolbar">
+            <input type="search" id="service-search" class="input" placeholder="Buscar servicio..." />
+            <button class="btn btn-primary" id="btn-new-service">+ Nuevo servicio</button>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table" id="services-table">
+              <thead>
+                <tr><th>ID</th><th>Nombre</th><th>Negocio</th><th>Precio</th><th>Duración</th><th>Activo</th><th>Acciones</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Consultas -->
+        <section id="view-inquiries" class="view">
+          <div class="toolbar">
+            <select id="inquiry-status-filter" class="input">
+              <option value="">Todas</option>
+              <option value="pending">Pendiente</option>
+              <option value="read">Leída</option>
+              <option value="responded">Respondida</option>
+              <option value="closed">Cerrada</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table" id="inquiries-table">
+              <thead>
+                <tr><th>ID</th><th>Negocio</th><th>Remitente</th><th>Mensaje</th><th>Estado</th><th>Fecha</th><th>Acciones</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Solicitudes de contacto -->
+        <section id="view-requests" class="view">
+          <div class="toolbar">
+            <select id="requests-status-filter" class="input">
+              <option value="">Todas</option>
+              <option value="new">Nuevas</option>
+              <option value="contacted">Contactadas</option>
+              <option value="closed">Cerradas</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table" id="requests-table">
+              <thead>
+                <tr><th>ID</th><th>Nombre</th><th>Contacto</th><th>Emprendimiento</th><th>Mensaje</th><th>Estado</th><th>Fecha</th><th>Acciones</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Favoritos -->
+        <section id="view-favorites" class="view">
+          <div class="table-wrap">
+            <table class="data-table" id="favorites-table">
+              <thead>
+                <tr><th>ID</th><th>Tipo</th><th>Referencia</th><th>Fecha</th><th>Acciones</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Perfil -->
+        <section id="view-profile" class="view">
+          <div class="card form-card">
+            <div class="card-header"><h3>Mi perfil</h3></div>
+            <form id="profile-form" class="form-grid">
+              <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="profile-email" disabled />
+              </div>
+              <div class="form-group">
+                <label>Nombre completo</label>
+                <input type="text" id="profile-name" />
+              </div>
+              <div class="form-group">
+                <label>Teléfono</label>
+                <input type="text" id="profile-phone" />
+              </div>
+              <div class="form-group">
+                <label>Ciudad</label>
+                <input type="text" id="profile-city" />
+              </div>
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Guardar cambios</button>
+              </div>
+            </form>
+          </div>
+          <div class="card form-card">
+            <div class="card-header"><h3>Cambiar contraseña</h3></div>
+            <form id="password-form" class="form-grid">
+              <div class="form-group">
+                <label>Contraseña actual</label>
+                <input type="password" id="current-password" required />
+              </div>
+              <div class="form-group">
+                <label>Nueva contraseña</label>
+                <input type="password" id="new-password" required minlength="8" />
+              </div>
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Cambiar contraseña</button>
+              </div>
+            </form>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal genérico -->
+  <div id="modal" class="modal-overlay" style="display:none">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modal-title">Título</h3>
+        <button class="modal-close" id="modal-close">×</button>
+      </div>
+      <div class="modal-body" id="modal-body"></div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="modal-cancel">Cancelar</button>
+        <button class="btn btn-primary" id="modal-save">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Asistente virtual -->
+  <button id="assistant-fab" class="assistant-fab" aria-label="Abrir asistente virtual">
+    <span class="assistant-fab-ico">🌱</span>
+    <span class="assistant-fab-txt">Asistente</span>
+  </button>
+
+  <div id="assistant-panel" class="assistant-panel" style="display:none" role="dialog" aria-label="Asistente virtual">
+    <div class="assistant-header">
+      <span class="assistant-avatar">🌱</span>
+      <div class="assistant-head-txt">
+        <strong>Asistente PLPE</strong>
+        <span class="assistant-status">En línea</span>
+      </div>
+      <button id="assistant-follow-btn" class="assistant-follow-btn" aria-pressed="false" title="Que el asistente siga al mouse y explique cada parte">
+        <span class="assistant-follow-ico">🖱️</span>
+        <span class="assistant-follow-label">Seguir mouse</span>
+      </button>
+      <button class="assistant-close" id="assistant-close" aria-label="Cerrar">×</button>
+    </div>
+    <div id="assistant-messages" class="assistant-messages"></div>
+    <div id="assistant-suggestions" class="assistant-suggestions"></div>
+    <form id="assistant-form" class="assistant-form">
+      <input id="assistant-input" type="text" placeholder="Escribí tu consulta..." autocomplete="off" maxlength="500" />
+      <button type="submit" class="btn btn-primary">Enviar</button>
+    </form>
+  </div>
+
+  <!-- Mascota que sigue al mouse y explica cada parte -->
+  <div id="cursor-mascot" class="cursor-mascot" aria-hidden="true" style="display:none">
+    <div class="mascot-bubble" id="mascot-bubble"></div>
+    <div class="mascot-avatar" id="mascot-avatar" title="Asistente PLPE — clic para chatear">
+      <svg viewBox="0 0 64 74"><use href="#plpe-mascot"/></svg>
+    </div>
+  </div>
+
+  <!-- Notificaciones toast -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
