@@ -1,4 +1,6 @@
 """Auth API routers with real implementations."""
+from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -25,7 +27,10 @@ from app.modules.auth.schemas.auth import (
     ChangePasswordRequest,
     UserPublicResponse,
     UserListResponse,
+    SetUserRolesRequest,
 )
+from app.modules.auth.schemas.role import RoleRead
+from app.modules.auth.repositories import RoleRepository
 from app.modules.auth.services import AuthService, UserService
 from app.modules.auth.models import User
 
@@ -339,11 +344,39 @@ async def suspend_user(
 # Role router
 role_router = APIRouter(prefix="/roles", tags=["Roles"])
 
-# We'll add role endpoints later - keeping placeholder for now
-@role_router.post("/", status_code=status.HTTP_201_CREATED)
-async def create_role():
-    return {"message": "Create role endpoint - to be implemented"}
 
-@role_router.get("", status_code=status.HTTP_200_OK)
-async def list_roles():
-    return {"message": "List roles endpoint - to be implemented"}
+@user_router.put("/{user_id}/roles", response_model=UserPublicResponse)
+async def set_user_roles(
+    user_id: int,
+    data: SetUserRolesRequest,
+    current_user: User = Depends(require_roles("admin")),
+    user_service: UserService = Depends(get_user_service),
+):
+    """Asignar los roles de un usuario (solo admin)."""
+    user = await user_service.set_roles(user_id, data.roles)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    return UserPublicResponse.model_validate(user)
+
+
+@user_router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_user(
+    user_id: int,
+    current_user: User = Depends(require_roles("admin")),
+    user_service: UserService = Depends(get_user_service),
+):
+    """Eliminar un usuario (solo admin)."""
+    if user_id == current_user.id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot delete yourself")
+    success = await user_service.delete_user(user_id)
+    if not success:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+@role_router.get("", response_model=List[RoleRead])
+async def list_roles(
+    current_user: User = Depends(require_roles("admin")),
+    session: AsyncSession = Depends(get_db),
+):
+    """Listar roles del sistema (solo admin)."""
+    roles = await RoleRepository(session).list_roles()
+    return [RoleRead.model_validate(r) for r in roles]

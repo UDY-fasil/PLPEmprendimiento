@@ -35,6 +35,7 @@ class ServiceService:
             price=data.price,
             currency=data.currency or "ARS",
             duration_minutes=data.duration_minutes,
+            image_url=getattr(data, "image_url", None),
             active=True,
         )
         service = await self.service_repo.create(service)

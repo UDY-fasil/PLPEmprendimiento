@@ -1,5 +1,6 @@
 """User service for user management business logic."""
 from typing import Optional, List
+from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.auth.repositories import UserRepository, RoleRepository, UserRoleRepository, SessionRepository
@@ -129,3 +130,35 @@ class UserService:
         await self.session_repo.revoke_all_user_sessions(user_id)
         await self.session.commit()
         return True
+
+    async def delete_user(self, user_id: int) -> bool:
+        """Elimina (soft delete) un usuario y revoca sus sesiones."""
+        user = await self.user_repo.get_by_id(user_id)
+        if not user:
+            return False
+
+        user.status = UserStatus.INACTIVE
+        user.deleted_at = datetime.utcnow()
+        await self.user_repo.update(user)
+        await self.session_repo.revoke_all_user_sessions(user_id)
+        await self.session.commit()
+        return True
+
+    async def set_roles(self, user_id: int, role_names: List[str]) -> Optional[User]:
+        """Reemplaza los roles de un usuario por los indicados."""
+        user = await self.user_repo.get_by_id(user_id)
+        if not user:
+            return None
+
+        existing = await self.user_role_repo.get_user_roles(user_id)
+        for role in existing:
+            await self.user_role_repo.remove_role(user_id, role.id)
+
+        for name in role_names:
+            role = await self.role_repo.get_by_name(name)
+            if role:
+                await self.user_role_repo.assign_role(user_id, role.id)
+
+        await self.session.commit()
+        self.session.expire_all()
+        return await self.user_repo.get_by_id(user_id)

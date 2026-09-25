@@ -97,6 +97,7 @@ class ProductCreateRequest(BaseModel):
     price: Optional[float] = None
     currency: str = "ARS"
     stock: Optional[int] = None
+    image_url: Optional[str] = None
 
 
 class ProductUpdateRequest(BaseModel):
@@ -139,6 +140,7 @@ class ServiceCreateRequest(BaseModel):
     price: Optional[float] = None
     currency: str = "ARS"
     duration_minutes: Optional[int] = None
+    image_url: Optional[str] = None
 
 
 class ServiceUpdateRequest(BaseModel):

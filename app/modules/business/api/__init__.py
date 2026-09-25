@@ -159,11 +159,13 @@ async def update_business(
 @business_router.delete("/{business_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_business(
     business_id: int,
-    business: Business = Depends(require_business_owner),
+    current_user: User = Depends(get_current_active_user),
     business_service: BusinessService = Depends(get_business_service),
 ):
-    """Eliminar un emprendimiento (soft delete, solo propietario)."""
-    success = await business_service.delete_business(business_id, business.owner_id)
+    """Eliminar un emprendimiento (solo admin)."""
+    if not _is_admin(current_user):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin required")
+    success = await business_service.delete_business(business_id, current_user.id, is_admin=True)
     if not success:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Business not found")
 
@@ -419,20 +421,13 @@ async def delete_product(
     current_user: User = Depends(get_current_active_user),
     product_service: ProductService = Depends(get_product_service),
 ):
-    """Eliminar producto (propietario del negocio o admin)."""
+    """Eliminar producto (solo admin)."""
+    if not _is_admin(current_user):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin required")
     product = await product_service.get_product_with_business(product_id)
     if not product:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
-
-    if not _is_admin(current_user) and product.business.owner_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
-
-    try:
-        success = await product_service.delete_product(
-            product_id, current_user.id, is_admin=_is_admin(current_user)
-        )
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    success = await product_service.delete_product(product_id, current_user.id, is_admin=True)
     if not success:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
 
@@ -555,20 +550,13 @@ async def delete_service(
     current_user: User = Depends(get_current_active_user),
     service_service: ServiceService = Depends(get_service_service),
 ):
-    """Eliminar servicio (propietario del negocio o admin)."""
+    """Eliminar servicio (solo admin)."""
+    if not _is_admin(current_user):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin required")
     service = await service_service.get_service_with_business(service_id)
     if not service:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Service not found")
-
-    if not _is_admin(current_user) and service.business.owner_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
-
-    try:
-        success = await service_service.delete_service(
-            service_id, current_user.id, is_admin=_is_admin(current_user)
-        )
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    success = await service_service.delete_service(service_id, current_user.id, is_admin=True)
     if not success:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Service not found")
 

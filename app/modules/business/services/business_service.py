@@ -102,12 +102,12 @@ class BusinessService:
         await self.session.refresh(business, ["categories"])
         return business
 
-    async def delete_business(self, business_id: int, owner_id: int) -> bool:
+    async def delete_business(self, business_id: int, owner_id: int, is_admin: bool = False) -> bool:
         business = await self.business_repo.get_by_id_with_owner(business_id)
         if not business:
             return False
 
-        if business.owner_id != owner_id:
+        if not is_admin and business.owner_id != owner_id:
             raise ValueError("Not authorized to delete this business")
 
         await self.business_repo.delete(business)

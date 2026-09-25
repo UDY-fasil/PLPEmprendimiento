@@ -35,6 +35,7 @@ class ProductService:
             price=data.price,
             currency=data.currency or "ARS",
             stock=data.stock,
+            image_url=getattr(data, "image_url", None),
             active=True,
         )
         product = await self.product_repo.create(product)

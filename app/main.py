@@ -1,4 +1,5 @@
 """Main application entry point for PLPE."""
+import mimetypes
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -6,6 +7,18 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+
+# Aseguramos los tipos MIME de imágenes (necesario para que el navegador
+# las muestre con la cabecera X-Content-Type-Options: nosniff)
+for _ext, _type in [
+    (".webp", "image/webp"),
+    (".svg", "image/svg+xml"),
+    (".jpg", "image/jpeg"),
+    (".jpeg", "image/jpeg"),
+    (".png", "image/png"),
+    (".gif", "image/gif"),
+]:
+    mimetypes.add_type(_type, _ext)
 
 from app.core.config import settings
 from app.core.database import init_mongodb, close_mongodb
@@ -27,6 +40,7 @@ from app.modules.audit.api import audit_router
 from app.modules.contact.api import contact_router
 from app.modules.contact.models import ContactRequest
 from app.modules.assistant.api import assistant_router
+from app.modules.uploads.api import router as uploads_router
 
 
 @asynccontextmanager
@@ -84,6 +98,7 @@ app.include_router(inquiry_router)
 app.include_router(audit_router)
 app.include_router(contact_router)
 app.include_router(assistant_router)
+app.include_router(uploads_router)
 
 
 @app.get("/health", tags=["Sistema"])

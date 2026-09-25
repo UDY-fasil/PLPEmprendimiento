@@ -219,6 +219,7 @@
         <button class="nav-item" data-view="services"><span class="nav-icon">✦</span> Servicios</button>
         <button class="nav-item" data-view="inquiries"><span class="nav-icon">✉</span> Consultas</button>
         <button class="nav-item" data-view="requests"><span class="nav-icon">✆</span> Solicitudes</button>
+        <button class="nav-item" data-view="users"><span class="nav-icon">👥</span> Usuarios</button>
         <button class="nav-item" data-view="favorites"><span class="nav-icon">♥</span> Favoritos</button>
         <button class="nav-item" data-view="profile"><span class="nav-icon">☺</span> Mi Perfil</button>
       </nav>
@@ -284,7 +285,7 @@
           <div class="table-wrap">
             <table class="data-table" id="businesses-table">
               <thead>
-                <tr><th>ID</th><th>Nombre</th><th>Ciudad</th><th>Categorías</th><th>Estado</th><th>Acciones</th></tr>
+                <tr><th>ID</th><th>Nombre</th><th>Email</th><th>Ciudad</th><th>Categorías</th><th>Estado</th><th>Acciones</th></tr>
               </thead>
               <tbody></tbody>
             </table>
@@ -300,7 +301,7 @@
           <div class="table-wrap">
             <table class="data-table" id="products-table">
               <thead>
-                <tr><th>ID</th><th>Nombre</th><th>Negocio</th><th>Precio</th><th>Stock</th><th>Activo</th><th>Acciones</th></tr>
+                <tr><th>ID</th><th>Imagen</th><th>Nombre</th><th>Negocio</th><th>Precio</th><th>Stock</th><th>Activo</th><th>Acciones</th></tr>
               </thead>
               <tbody></tbody>
             </table>
@@ -316,7 +317,7 @@
           <div class="table-wrap">
             <table class="data-table" id="services-table">
               <thead>
-                <tr><th>ID</th><th>Nombre</th><th>Negocio</th><th>Precio</th><th>Duración</th><th>Activo</th><th>Acciones</th></tr>
+                <tr><th>ID</th><th>Imagen</th><th>Nombre</th><th>Negocio</th><th>Precio</th><th>Duración</th><th>Activo</th><th>Acciones</th></tr>
               </thead>
               <tbody></tbody>
             </table>
@@ -370,6 +371,21 @@
             <table class="data-table" id="favorites-table">
               <thead>
                 <tr><th>ID</th><th>Tipo</th><th>Referencia</th><th>Fecha</th><th>Acciones</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Usuarios (solo admin) -->
+        <section id="view-users" class="view">
+          <div class="toolbar">
+            <input type="search" id="user-search" class="input" placeholder="Buscar usuario..." />
+          </div>
+          <div class="table-wrap">
+            <table class="data-table" id="users-table">
+              <thead>
+                <tr><th>ID</th><th>Email</th><th>Nombre</th><th>Ciudad</th><th>Roles</th><th>Estado</th><th>Acciones</th></tr>
               </thead>
               <tbody></tbody>
             </table>

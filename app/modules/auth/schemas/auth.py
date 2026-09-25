@@ -91,3 +91,7 @@ class UserListResponse(BaseModel):
     total: int
     page: int
     page_size: int
+
+
+class SetUserRolesRequest(BaseModel):
+    roles: List[str] = Field(default_factory=list)

@@ -330,6 +330,8 @@ function applyRoleToUI() {
   const admin = isAdmin();
   const reqNav = document.querySelector('.nav-item[data-view="requests"]');
   if (reqNav) reqNav.style.display = admin ? "" : "none";
+  const usersNav = document.querySelector('.nav-item[data-view="users"]');
+  if (usersNav) usersNav.style.display = admin ? "" : "none";
   const newCat = $("#btn-new-category");
   if (newCat) newCat.style.display = admin ? "" : "none";
 }
@@ -371,6 +373,7 @@ const VIEW_TITLES = {  dashboard: "Panel",
   services: "Servicios",
   inquiries: "Consultas",
   requests: "Solicitudes",
+  users: "Usuarios",
   favorites: "Favoritos",
   profile: "Mi Perfil",
 };
@@ -407,6 +410,7 @@ async function loadView(view) {
     else if (view === "services") await loadServices();
     else if (view === "inquiries") await loadInquiries();
     else if (view === "requests") await loadRequests();
+    else if (view === "users") await loadUsers();
     else if (view === "favorites") await loadFavorites();
     else if (view === "profile") fillProfile();
   } catch (e) {
@@ -466,7 +470,7 @@ async function loadCategories() {
     .map(
       (c) => `<tr>
         <td>${c.id}</td>
-        <td><strong>${esc(c.name)}</strong></td>
+        <td><span class="cat-cell">${categoryIconHtml(c.icon)}<strong>${esc(c.name)}</strong></span></td>
         <td>${esc(c.description || "-")}</td>
         <td>${c.active ? badge("active", "badge-approved") : badge("inactive")}</td>
         <td>${
@@ -493,7 +497,7 @@ async function loadBusinesses() {
   state.businesses = data.businesses;
   const tbody = $("#businesses-table tbody");
   if (!data.businesses.length) {
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="6">No hay emprendimientos</td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="7">No hay emprendimientos</td></tr>`;
     return;
   }
   tbody.innerHTML = data.businesses
@@ -510,13 +514,14 @@ async function loadBusinesses() {
           : "";
       return `<tr>
         <td>${b.id}</td>
-        <td><strong>${esc(b.name)}</strong><div class="mini-sub">${esc(b.email || "")}</div></td>
+        <td><strong>${esc(b.name)}</strong></td>
+        <td>${esc(b.email || "-")}</td>
         <td>${esc(b.city || "-")}</td>
         <td>${cats}</td>
         <td>${badge(b.status)}</td>
         <td><div class="actions">
           ${mine ? `<button class="btn btn-ghost btn-sm" data-action="edit-business" data-id="${b.id}">Editar</button>` : ""}
-          ${mine ? `<button class="btn btn-danger btn-sm" data-action="del-business" data-id="${b.id}">Eliminar</button>` : ""}
+          ${isAdmin() ? `<button class="btn btn-danger btn-sm" data-action="del-business" data-id="${b.id}">Eliminar</button>` : ""}
           ${adminBtns}${adminBtns2}
         </div></td>
       </tr>`;
@@ -540,13 +545,14 @@ async function loadProducts() {
   };
   const tbody = $("#products-table tbody");
   if (!data.products.length) {
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="7">No hay productos</td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="8">No hay productos</td></tr>`;
     return;
   }
   tbody.innerHTML = data.products
     .map(
       (p) => `<tr>
         <td>${p.id}</td>
+        <td>${p.image_url ? `<img class="thumb" src="${esc(p.image_url)}" alt="" loading="lazy">` : "—"}</td>
         <td><strong>${esc(p.name)}</strong></td>
         <td>${esc(bizName(p.business_id))}</td>
         <td>${fmtMoney(p.price, p.currency)}</td>
@@ -554,7 +560,7 @@ async function loadProducts() {
         <td>${p.active ? badge("active", "badge-approved") : badge("inactive")}</td>
         <td><div class="actions">
           <button class="btn btn-ghost btn-sm" data-action="edit-product" data-id="${p.id}">Editar</button>
-          <button class="btn btn-danger btn-sm" data-action="del-product" data-id="${p.id}">Eliminar</button>
+          ${isAdmin() ? `<button class="btn btn-danger btn-sm" data-action="del-product" data-id="${p.id}">Eliminar</button>` : ""}
         </div></td>
       </tr>`
     )
@@ -577,13 +583,14 @@ async function loadServices() {
   };
   const tbody = $("#services-table tbody");
   if (!data.services.length) {
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="7">No hay servicios</td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="8">No hay servicios</td></tr>`;
     return;
   }
   tbody.innerHTML = data.services
     .map(
       (s) => `<tr>
         <td>${s.id}</td>
+        <td>${s.image_url ? `<img class="thumb" src="${esc(s.image_url)}" alt="" loading="lazy">` : "—"}</td>
         <td><strong>${esc(s.name)}</strong></td>
         <td>${esc(bizName(s.business_id))}</td>
         <td>${fmtMoney(s.price, s.currency)}</td>
@@ -591,7 +598,7 @@ async function loadServices() {
         <td>${s.active ? badge("active", "badge-approved") : badge("inactive")}</td>
         <td><div class="actions">
           <button class="btn btn-ghost btn-sm" data-action="edit-service" data-id="${s.id}">Editar</button>
-          <button class="btn btn-danger btn-sm" data-action="del-service" data-id="${s.id}">Eliminar</button>
+          ${isAdmin() ? `<button class="btn btn-danger btn-sm" data-action="del-service" data-id="${s.id}">Eliminar</button>` : ""}
         </div></td>
       </tr>`
     )
@@ -674,6 +681,81 @@ function openRequestModal(req) {
     closeModal();
     await loadRequests();
   });
+}
+
+/* ---------- Usuarios (solo admin) ---------- */
+async function loadUsers() {
+  const search = ($("#user-search") ? $("#user-search").value.trim().toLowerCase() : "");
+  const data = await apiRequest("/users?page_size=100");
+  let users = data.users || [];
+  if (search) {
+    users = users.filter((u) =>
+      `${u.email} ${u.full_name || ""} ${u.city || ""}`.toLowerCase().includes(search)
+    );
+  }
+  state.users = users;
+  const tbody = $("#users-table tbody");
+  if (!users.length) {
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="7">No hay usuarios</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = users
+    .map((u) => {
+      const roles =
+        (u.roles || []).map((r) => `<span class="badge badge-read">${esc(r)}</span>`).join(" ") || "—";
+      const isSelf = state.user && u.id === state.user.id;
+      return `<tr>
+        <td>${u.id}</td>
+        <td>${esc(u.email)}</td>
+        <td>${esc(u.full_name || "-")}</td>
+        <td>${esc(u.city || "-")}</td>
+        <td>${roles}</td>
+        <td>${badge(u.status)}</td>
+        <td><div class="actions">
+          <button class="btn btn-ghost btn-sm" data-action="edit-user-roles" data-id="${u.id}">Roles</button>
+          ${isSelf ? "" : `<button class="btn btn-danger btn-sm" data-action="del-user" data-id="${u.id}">Eliminar</button>`}
+        </div></td>
+      </tr>`;
+    })
+    .join("");
+}
+
+async function openUserRolesModal(user) {
+  let roles = [];
+  try {
+    roles = await apiRequest("/roles");
+  } catch (e) {
+    roles = [{ name: "admin" }, { name: "producer" }, { name: "user" }];
+  }
+  const current = user.roles || [];
+  const body = `
+    <div class="form-group"><label>Usuario</label><input disabled value="${esc(user.email)}"></div>
+    <div class="form-group"><label>Roles</label>
+      ${roles
+        .map(
+          (r) => `<label class="form-check" style="margin-bottom:6px">
+        <input type="checkbox" name="role_${esc(r.name)}" value="${esc(r.name)}" ${current.includes(r.name) ? "checked" : ""}>
+        <span>${esc(r.name)}${r.description ? ` <span class="mini-sub">— ${esc(r.description)}</span>` : ""}</span>
+      </label>`
+        )
+        .join("")}
+    </div>
+    <p class="mini-sub">admin: acceso total · producer: gestiona sus propios emprendimientos y productos · user: solo navegación</p>
+  `;
+  openModal("Roles de " + (user.full_name || user.email), body, async () => {
+    const selected = Array.from($("#modal-body").querySelectorAll("input[type=checkbox]:checked")).map((c) => c.value);
+    await apiRequest(`/users/${user.id}/roles`, { method: "PUT", body: { roles: selected } });
+    toast("Roles actualizados");
+    closeModal();
+    await loadUsers();
+  });
+}
+
+async function deleteUser(id) {
+  if (!confirm("¿Eliminar este usuario? Esta acción no se puede deshacer.")) return;
+  await apiRequest(`/users/${id}`, { method: "DELETE" });
+  toast("Usuario eliminado");
+  await loadUsers();
 }
 
 /* ---------- Favoritos ---------- */
@@ -760,11 +842,38 @@ function businessOptions(selected = null) {
     .join("");
 }
 
+function isImageIcon(icon) {
+  return !!icon && (/^\/static\//.test(icon) || /^https?:\/\//.test(icon)) && /\.(png|jpe?g|gif|webp|svg)(\?|$)/i.test(icon);
+}
+
+function categoryIconHtml(icon) {
+  if (!icon) return "";
+  if (isImageIcon(icon)) return `<img class="cat-icon-img" src="${esc(icon)}" alt="">`;
+  return `<span class="cat-icon-emoji">${esc(icon)}</span>`;
+}
+
 function formCategory(data = {}) {
+  const icon = data.icon || "";
+  const isImg = isImageIcon(icon);
   return `
     <div class="form-group"><label>Nombre *</label><input name="name" required value="${esc(data.name || "")}"></div>
     <div class="form-group"><label>Descripción</label><textarea name="description">${esc(data.description || "")}</textarea></div>
-    <div class="form-group"><label>Icono</label><input name="icon" placeholder="ej: 🍎" value="${esc(data.icon || "")}"></div>
+    <div class="form-group">
+      <label>Icono</label>
+      <div class="icon-field">
+        <span class="icon-preview" id="cat-icon-preview">${isImg ? `<img src="${esc(icon)}" alt="">` : esc(icon) || "—"}</span>
+        ${
+          isImg
+            ? `<input type="hidden" name="icon" value="${esc(icon)}"><span class="mini-sub">Imagen cargada</span>`
+            : `<input name="icon" id="cat-icon-text" placeholder="ej: 🍎" value="${esc(icon)}">`
+        }
+        <label class="btn btn-ghost btn-sm icon-upload-btn">
+          📁 Subir imagen
+          <input type="file" id="cat-icon-file" accept="image/png,image/jpeg,image/gif,image/webp" hidden>
+        </label>
+      </div>
+      <p class="mini-sub" style="margin-top:6px">Escribí un emoji o subí una imagen (PNG, JPG, GIF o WEBP · máx 3 MB).</p>
+    </div>
     <div class="form-group form-check"><input type="checkbox" name="active" id="f-active" ${data.active !== false ? "checked" : ""}><label for="f-active">Activa</label></div>
   `;
 }
@@ -787,6 +896,55 @@ function formBusiness(data = {}) {
   `;
 }
 
+let pendingProductImage = null;
+let pendingServiceImage = null;
+
+function imageFieldHtml(label, name, value, prefix) {
+  return `
+    <div class="form-group">
+      <label>${label}</label>
+      <div class="icon-field">
+        <span class="icon-preview" id="${prefix}-preview">${value ? `<img src="${esc(value)}" alt="">` : "🖼️"}</span>
+        <input name="${name}" id="${prefix}-url" placeholder="https://... o subí una imagen" value="${esc(value || "")}">
+        <label class="btn btn-ghost btn-sm icon-upload-btn">
+          📁 Subir imagen
+          <input type="file" id="${prefix}-file" accept="image/png,image/jpeg,image/gif,image/webp" hidden>
+        </label>
+      </div>
+      <p class="mini-sub" style="margin-top:6px">Podés pegar una URL o subir una imagen (PNG, JPG, GIF o WEBP · máx 3 MB).</p>
+    </div>
+  `;
+}
+
+function bindImageField(prefix, setPending) {
+  const file = $(`#${prefix}-file`);
+  const url = $(`#${prefix}-url`);
+  const preview = $(`#${prefix}-preview`);
+  if (file) {
+    file.addEventListener("change", (e) => {
+      const f = e.target.files && e.target.files[0];
+      if (!f) return;
+      if (f.size > 3 * 1024 * 1024) {
+        toast("La imagen supera 3 MB", "error");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        setPending(reader.result);
+        if (preview) preview.innerHTML = `<img src="${reader.result}" alt="">`;
+        if (url) url.value = "";
+      };
+      reader.readAsDataURL(f);
+    });
+  }
+  if (url) {
+    url.addEventListener("input", () => {
+      const v = url.value.trim();
+      if (preview) preview.innerHTML = v ? `<img src="${esc(v)}" alt="">` : "🖼️";
+    });
+  }
+}
+
 function formProduct(data = {}) {
   return `
     <div class="form-group"><label>Emprendimiento *</label><select name="business_id" required>${businessOptions(data.business_id)}</select></div>
@@ -797,7 +955,7 @@ function formProduct(data = {}) {
       <div class="form-group"><label>Moneda</label><input name="currency" value="ARS" readonly></div>
     </div>
     <div class="form-group"><label>Stock</label><input type="number" min="0" name="stock" value="${data.stock ?? ""}"></div>
-    <div class="form-group"><label>URL de imagen</label><input name="image_url" value="${esc(data.image_url || "")}"></div>
+    ${imageFieldHtml("Imagen (URL o subir)", "image_url", data.image_url, "prod-img")}
     <div class="form-group form-check"><input type="checkbox" name="active" id="p-active" ${data.active !== false ? "checked" : ""}><label for="p-active">Activo</label></div>
   `;
 }
@@ -812,7 +970,7 @@ function formService(data = {}) {
       <div class="form-group"><label>Moneda</label><input name="currency" value="ARS" readonly></div>
     </div>
     <div class="form-group"><label>Duración (minutos)</label><input type="number" min="0" name="duration_minutes" value="${data.duration_minutes ?? ""}"></div>
-    <div class="form-group"><label>URL de imagen</label><input name="image_url" value="${esc(data.image_url || "")}"></div>
+    ${imageFieldHtml("Imagen (URL o subir)", "image_url", data.image_url, "serv-img")}
     <div class="form-group form-check"><input type="checkbox" name="active" id="s-active" ${data.active !== false ? "checked" : ""}><label for="s-active">Activo</label></div>
   `;
 }
@@ -840,15 +998,44 @@ function readForm() {
 /* ============================================================
    Acciones CRUD
    ============================================================ */
+let pendingCategoryIcon = null;
+
 function openCategoryModal(cat = null) {
+  pendingCategoryIcon = null;
   openModal(cat ? "Editar categoría" : "Nueva categoría", formCategory(cat || {}), async () => {
     const data = readForm();
+    if (pendingCategoryIcon) {
+      const up = await apiRequest("/uploads/image", {
+        method: "POST",
+        body: { data: pendingCategoryIcon },
+      });
+      data.icon = up.url;
+    }
     if (cat) await apiRequest(`/categories/${cat.id}`, { method: "PATCH", body: data });
     else await apiRequest("/categories", { method: "POST", body: data });
+    pendingCategoryIcon = null;
     toast(cat ? "Categoría actualizada" : "Categoría creada");
     closeModal();
     await loadCategories();
   });
+  const file = $("#cat-icon-file");
+  if (file) {
+    file.addEventListener("change", (e) => {
+      const f = e.target.files && e.target.files[0];
+      if (!f) return;
+      if (f.size > 3 * 1024 * 1024) {
+        toast("La imagen supera 3 MB", "error");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        pendingCategoryIcon = reader.result;
+        const prev = $("#cat-icon-preview");
+        if (prev) prev.innerHTML = `<img src="${pendingCategoryIcon}" alt="">`;
+      };
+      reader.readAsDataURL(f);
+    });
+  }
 }
 
 function openBusinessModal(biz = null) {
@@ -875,8 +1062,13 @@ function openProductModal(prod = null) {
     toast("Primero creá un emprendimiento", "warning");
     return;
   }
+  pendingProductImage = null;
   openModal(prod ? "Editar producto" : "Nuevo producto", formProduct(prod || {}), async () => {
     const data = readForm();
+    if (pendingProductImage) {
+      const up = await apiRequest("/uploads/image", { method: "POST", body: { data: pendingProductImage } });
+      data.image_url = up.url;
+    }
     if (prod) {
       const { business_id, ...upd } = data;
       await apiRequest(`/products/${prod.id}`, { method: "PATCH", body: upd });
@@ -885,8 +1077,12 @@ function openProductModal(prod = null) {
       await apiRequest("/products", { method: "POST", body: data });
       toast("Producto creado");
     }
+    pendingProductImage = null;
     closeModal();
     await loadProducts();
+  });
+  bindImageField("prod-img", (d) => {
+    pendingProductImage = d;
   });
 }
 
@@ -895,8 +1091,13 @@ function openServiceModal(serv = null) {
     toast("Primero creá un emprendimiento", "warning");
     return;
   }
+  pendingServiceImage = null;
   openModal(serv ? "Editar servicio" : "Nuevo servicio", formService(serv || {}), async () => {
     const data = readForm();
+    if (pendingServiceImage) {
+      const up = await apiRequest("/uploads/image", { method: "POST", body: { data: pendingServiceImage } });
+      data.image_url = up.url;
+    }
     if (serv) {
       const { business_id, ...upd } = data;
       await apiRequest(`/services/${serv.id}`, { method: "PATCH", body: upd });
@@ -905,8 +1106,12 @@ function openServiceModal(serv = null) {
       await apiRequest("/services", { method: "POST", body: data });
       toast("Servicio creado");
     }
+    pendingServiceImage = null;
     closeModal();
     await loadServices();
+  });
+  bindImageField("serv-img", (d) => {
+    pendingServiceImage = d;
   });
 }
 
@@ -1024,7 +1229,7 @@ function renderPublicBusinesses(list) {
   grid.innerHTML = list
     .map((b) => {
       const cats = (b.categories || [])
-        .map((c) => `<span class="pub-tag">${esc(c.name)}</span>`)
+        .map((c) => `<span class="pub-tag">${categoryIconHtml(c.icon)}${esc(c.name)}</span>`)
         .join("");
       return `<article class="pub-card">
         <div class="pub-card-media">${b.logo_url ? `<img src="${esc(b.logo_url)}" alt="">` : "🏪"}</div>
@@ -1158,7 +1363,7 @@ async function openPublicBusinessDetail(id) {
 
     $("#detail-img").innerHTML = business.logo_url ? `<img src="${esc(business.logo_url)}" alt="">` : "🏪";
     $("#detail-name").textContent = business.name;
-    const cats = (business.categories || []).map((c) => `<span class="pub-tag">${esc(c.name)}</span>`).join("");
+    const cats = (business.categories || []).map((c) => `<span class="pub-tag">${categoryIconHtml(c.icon)}${esc(c.name)}</span>`).join("");
     $("#detail-meta").innerHTML =
       `<span class="detail-loc">📍 ${esc(business.city || "Sin ubicación")}</span>` +
       (cats ? `<span class="pub-tags">${cats}</span>` : "");
@@ -1708,6 +1913,10 @@ function bindEvents() {
   });
   on("#inquiry-status-filter", "change", () => loadInquiries().catch((e) => toast(e.message, "error")));
   on("#requests-status-filter", "change", () => loadRequests().catch((e) => toast(e.message, "error")));
+  on("#user-search", "input", () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => loadUsers().catch((e) => toast(e.message, "error")), 300);
+  });
 
   // Delegación de acciones en tablas
   document.addEventListener("click", async (e) => {
@@ -1754,6 +1963,8 @@ function bindEvents() {
         }
       } else if (action === "view-inquiry") openInquiryModal(state.inquiries.find((i) => i.id === id));
       else if (action === "view-request") openRequestModal(state.requests.find((r) => r.id === id));
+      else if (action === "edit-user-roles") openUserRolesModal((state.users || []).find((u) => u.id === id));
+      else if (action === "del-user") await deleteUser(id);
       else if (action === "public-view-business") openPublicBusinessDetail(id);
       else if (action === "del-favorite") {
         const fav = state.favorites.find((f) => f.id === id);
@@ -1865,6 +2076,7 @@ function initResponsiveTables() {
     "#services-table",
     "#inquiries-table",
     "#requests-table",
+    "#users-table",
     "#favorites-table",
   ].forEach((sel) => {
     const table = $(sel);
