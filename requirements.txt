@@ -5,10 +5,12 @@ aiomysql==0.2.0
 alembic==1.13.3
 motor
 pymongo
-pydantic
+pydantic[email]
 pydantic-settings
 python-dotenv
 argon2-cffi
 passlib[argon2]
 python-jose[cryptography]
 pyotp
+slowapi
+redis
